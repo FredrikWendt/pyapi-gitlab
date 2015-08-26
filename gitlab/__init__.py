@@ -119,6 +119,22 @@ class Gitlab(object):
         else:
             return False
 
+     def _inspectCreateResponse(self, response):
+         if response.status_code == 400:
+             raise Exception(u"Bad Request: %s" % response.content.decode("utf-8"))
+         elif response.status_code == 401:
+             raise Exception(u"Unauthorized")
+         elif response.status_code == 403:
+             raise Exception(u"Forbidden")
+         elif response.status_code == 405:
+             raise Exception(u"Method Not Allowed")
+         elif response.status_code == 409:
+             raise Exception(u"Conflict")
+         elif response.status_code == 422:
+             raise Exception(u"Unprocessable")
+         elif response.status_code == 500:
+             raise Exception(u"Unexpected Server Error")
+
     def createuser(self, name, username, password, email, **kwargs):
         """Create a user
 
@@ -136,10 +152,11 @@ class Gitlab(object):
 
         request = requests.post(self.users_url, headers=self.headers, data=data,
                                 verify=self.verify_ssl)
+        self._inspectCreateResponse(request)
         if request.status_code == 201:
             return json.loads(request.content.decode("utf-8"))
-        elif request.status_code == 404:
-            return False
+        else:
+            raise Exception("Unexpected response status code %s" % request.status_code)
 
     def deleteuser(self, user_id):
         """Deletes an user by ID
